@@ -19,6 +19,8 @@
     [class.input-card--shake]="store.askShake()"
   >
     <textarea
+      id="problem-description"
+      name="problem-description"
       class="input-card__textarea"
       [ngModel]="store.problemDraft()"
       (ngModelChange)="store.setProblemDraft($event)"
