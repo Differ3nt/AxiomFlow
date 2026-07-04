@@ -1,0 +1,61 @@
+steps:
+  # Build API container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/axiomflow-api', '-f', 'Dockerfile.api', '.']
+    
+  # Push API container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/axiomflow-api']
+    
+  # Deploy API to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'axiomflow-api'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/axiomflow-api'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--min-instances'
+      - '1'
+      - '--set-env-vars'
+      - 'DB_HOST=127.0.0.1,DB_USER=postgres,DB_NAME=axiomflow'
+      - '--set-secrets'
+      - 'DB_PASSWORD=axiomflow-db-password:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest'
+      # Assuming Cloud SQL Proxy connection
+      - '--add-cloudsql-instances'
+      - '$PROJECT_ID:europe-west1:axiomflow-db'
+
+  # Build Web container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/axiomflow-web', '-f', 'Dockerfile.web', '.']
+    
+  # Push Web container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/axiomflow-web']
+    
+  # Deploy Web to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'axiomflow-web'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/axiomflow-web'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--min-instances'
+      - '1'
+
+images:
+  - 'gcr.io/$PROJECT_ID/axiomflow-api'
+  - 'gcr.io/$PROJECT_ID/axiomflow-web'

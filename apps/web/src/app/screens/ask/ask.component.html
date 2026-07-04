@@ -1,0 +1,184 @@
+<div class="ask" aria-live="polite">
+
+  <!-- Hero -->
+  <div class="ask__hero">
+    <div class="ready-pill">
+      <span class="ready-dot"></span>
+      Ready to investigate
+    </div>
+    <h1 class="ask__heading">What problem are we solving today?</h1>
+    <p class="ask__sub">
+      Describe it in plain words. The assistant will reformulate it as a formal tradeoff and produce
+      <strong>three ranked solutions</strong> using two independent methods.
+    </p>
+  </div>
+
+  <!-- Input card -->
+  <div
+    class="input-card"
+    [class.input-card--shake]="store.askShake()"
+  >
+    <textarea
+      class="input-card__textarea"
+      [ngModel]="store.problemDraft()"
+      (ngModelChange)="store.setProblemDraft($event)"
+      rows="6"
+      aria-label="Problem description"
+    ></textarea>
+
+    <div class="input-card__toolbar">
+      <!-- Chip toggles -->
+      <button
+        class="chip-btn"
+        [class.chip-btn--open]="store.askDocsOpen()"
+        [attr.aria-expanded]="store.askDocsOpen()"
+        (click)="store.toggleAskDocs()"
+      >📎 Documents</button>
+
+
+
+      <button
+        class="chip-btn"
+        [class.chip-btn--open]="store.askMethodOpen()"
+        [attr.aria-expanded]="store.askMethodOpen()"
+        (click)="store.toggleAskMethod()"
+      >⚙ Method <span class="chip-btn__label">TRIZ + Physics</span></button>
+
+      <button
+        class="chip-btn"
+        [class.chip-btn--open]="store.askAdvOpen()"
+        [attr.aria-expanded]="store.askAdvOpen()"
+        (click)="store.toggleAskAdv()"
+      >🎛 Temperature</button>
+
+      <span class="toolbar-spacer"></span>
+
+      <button
+        class="btn-start"
+        (click)="start()"
+      >
+        Start investigation →
+      </button>
+    </div>
+  </div>
+
+  <!-- Error banner -->
+  @if (store.askError()) {
+    <div class="error-banner" role="alert">
+      <div class="error-banner__header">
+        <span class="error-icon">⚠</span>
+        <div class="error-title">We couldn't identify a clear tradeoff</div>
+        <button
+          class="dismiss-btn"
+          (click)="store.dismissAskError()"
+          aria-label="Dismiss"
+        >✕</button>
+      </div>
+      <p class="error-desc">
+        A good problem statement includes at least these three ingredients. Yours is missing some — please add:
+      </p>
+      <div class="error-requirements">
+        @for (r of errorRequirements; track r.title) {
+          <div class="req-row">
+            <span
+              class="req-icon"
+              [style.background]="r.iconBg"
+              [style.color]="r.iconColor"
+            >{{ r.status }}</span>
+            <div class="req-text">
+              <strong>{{ r.title }}</strong>
+              <span class="req-hint"> — {{ r.hint }}</span>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="error-actions">
+        <button class="btn-warning" (click)="store.dismissAskError()">Add context and try again</button>
+        <button class="btn-ghost-sm" (click)="store.fillExample()">Show me a good example</button>
+      </div>
+    </div>
+  }
+
+  <!-- Suggested prompts -->
+  @if (!store.askError()) {
+    <div class="suggestions">
+      <span class="suggestions__label">Try:</span>
+      @for (p of suggestedProblems; track p.text) {
+        <button class="suggestion-pill" (click)="useSuggestion(p.draft)">{{ p.text }}</button>
+      }
+    </div>
+  }
+
+  <!-- Documents collapsible -->
+  @if (store.askDocsOpen()) {
+    <div class="collapsible" role="region" aria-label="Reference documents">
+      <div class="collapsible__title">
+        Reference documents
+        <span class="optional">— optional</span>
+      </div>
+      <div class="dropzone">
+        <div class="dropzone-icon">📁</div>
+        <div class="dropzone-text">Drop files, or click to browse</div>
+        <div class="dropzone-hint">PDF / TXT / CSV up to 10 MB · plant specs, past reports, industry papers</div>
+      </div>
+    </div>
+  }
+
+
+
+  <!-- Method collapsible -->
+  @if (store.askMethodOpen()) {
+    <div class="collapsible" role="region" aria-label="Second analysis method">
+      <div class="collapsible__title">Second method</div>
+      <p class="method-hint">TRIZ is always used. Pair it with a second method for cross-validation.</p>
+      <div class="method-list">
+        @for (m of methods; track m.name) {
+          <button
+            class="method-option"
+            [class.method-option--selected]="m.selected"
+            (click)="selectMethod(m)"
+            [attr.aria-pressed]="m.selected"
+          >
+            <div class="method-option__top">
+              <span class="method-icon">{{ m.icon }}</span>
+              <span class="method-name">{{ m.name }}</span>
+              @if (m.selected) {
+                <span class="method-check">✓</span>
+              }
+            </div>
+            <div class="method-desc">{{ m.desc }}</div>
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Advanced collapsible -->
+  @if (store.askAdvOpen()) {
+    <div class="collapsible" role="region" aria-label="Temperature settings">
+      <div class="collapsible__title">Temperature</div>
+      <label class="slider-label">
+        <span>How wild should the ideas be?</span>
+        <span class="slider-value font-mono">{{ store.temperature() }}</span>
+      </label>
+      <p class="slider-hint">Lower = safe, proven. Higher = more experimental.</p>
+      <div class="slider-track-wrapper">
+        <input 
+          type="range" 
+          min="0.0" 
+          max="1.0" 
+          step="0.1" 
+          [ngModel]="store.temperature()" 
+          (ngModelChange)="store.setTemperature($event)"
+          class="temperature-slider"
+        />
+      </div>
+      <div class="slider-labels">
+        <span>Conservative</span><span>Balanced</span><span>Experimental</span>
+      </div>
+    </div>
+  }
+
+
+
+</div>

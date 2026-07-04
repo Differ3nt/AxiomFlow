@@ -75,6 +75,47 @@
       "options": {
         "passWithNoTests": true
       }
+    },
+    "build-http": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "platform": "node",
+        "outputPath": "dist/apps/api-http",
+        "format": ["cjs"],
+        "bundle": true,
+        "main": "apps/api/src/http/main-http.ts",
+        "tsConfig": "apps/api/tsconfig.app.json",
+        "assets": ["apps/api/src/assets"],
+        "generatePackageJson": true,
+        "sourcemap": true,
+        "esbuildConfig": "apps/api/esbuild.config.js"
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "sourcemap": false
+        }
+      }
+    },
+    "serve-http": {
+      "continuous": true,
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build-http"],
+      "options": {
+        "buildTarget": "api:build-http",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "api:build-http:development"
+        },
+        "production": {
+          "buildTarget": "api:build-http:production"
+        }
+      }
     }
   }
 }

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { GeminiService } from './gemini.service';
+import { ClaudeService } from './claude.service';
 
 @Module({
-  providers: [GeminiService],
-  exports: [GeminiService],
+  providers: [ClaudeService],
+  exports: [ClaudeService],
 })
 export class LlmModule {}

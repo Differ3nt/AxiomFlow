@@ -1,0 +1,111 @@
+<div class="process">
+
+  <!-- Progress bar -->
+  <div class="progress-bar">
+    <div class="progress-bar__fill" [style.width]="store.processPct()"></div>
+  </div>
+
+  <!-- Status strip -->
+  <div class="status-strip">
+    <span class="status-dot" [class.status-dot--done]="store.processDone()"></span>
+    <span class="status-text">{{ store.processStateText() }}</span>
+    <span class="status-elapsed font-mono">{{ elapsed() }}</span>
+  </div>
+
+  <!-- Main layout: left aside + right content -->
+  <div class="process__layout">
+
+    <!-- Step list (left aside) -->
+    <aside class="step-list" aria-label="Investigation steps">
+      @for (s of steps(); track s.n; let i = $index) {
+        <button
+          class="step-row"
+          [class.step-row--focus]="s.isFocus"
+          [attr.aria-label]="s.ariaLabel"
+          [attr.aria-current]="s.status === 'active' ? 'step' : null"
+          (click)="clickStep(i)"
+        >
+          <span
+            class="step-chip"
+            [class.step-chip--done]="s.status === 'done'"
+            [class.step-chip--active]="s.status === 'active'"
+          >
+            {{ s.chipContent }}
+          </span>
+          <span
+            class="step-label"
+            [class.step-label--muted]="s.status === 'pending'"
+          >{{ s.plainName }}</span>
+          <span class="step-dur font-mono">{{ s.duration }}</span>
+        </button>
+      }
+    </aside>
+
+    <!-- Right panel -->
+    <div class="process__right">
+
+      <!-- Focus step card -->
+      <div
+        class="focus-card"
+        [style.border-color]="focusStep().status === 'active' ? 'var(--warning-soft-border)' : 'var(--border)'"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <div class="focus-card__header">
+          <div class="focus-step-number font-mono">Step {{ focusStep().n }}</div>
+          <span
+            class="focus-badge"
+            [style.color]="focusBadge().color"
+            [style.background]="focusBadge().bg"
+          >{{ focusBadge().text }}</span>
+        </div>
+        <h2 class="focus-title">{{ focusStep().plainName }}</h2>
+        <p class="focus-detail">{{ focusStep().detail }}</p>
+
+        @if (focusStep().status !== 'pending') {
+          <div class="focus-result">
+            <span class="focus-result__icon">{{ focusStep().status === 'done' ? '✓' : '●' }}</span>
+            <span>{{ focusStep().result }}</span>
+          </div>
+        }
+      </div>
+
+
+
+      <!-- Console log -->
+      <div class="panel-section">
+        <button
+          class="panel-toggle"
+          [attr.aria-expanded]="store.logOpen()"
+          (click)="store.toggleLog()"
+        >
+          <span class="panel-toggle__icon">⊞</span>
+          <span class="panel-toggle__label">Console log</span>
+          <span class="panel-toggle__count font-mono">{{ store.consoleLog().length }}</span>
+          <span class="panel-toggle__chevron" [class.panel-toggle__chevron--open]="store.logOpen()">▸</span>
+        </button>
+
+        @if (store.logOpen()) {
+          <div class="console" aria-live="polite" aria-label="Processing log">
+            @for (l of store.consoleLog(); track l.time + l.text) {
+              <div class="log-line">
+                <span class="log-time font-mono">{{ l.time }}</span>
+                <span class="log-level font-mono" [style.color]="l.levelColor">{{ l.level }}</span>
+                <span class="log-text font-mono">{{ l.text }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- View answer CTA -->
+      @if (store.processDone()) {
+        <div class="done-cta">
+          <span class="done-cta__text">Investigation complete · winner ready</span>
+          <button class="btn-answer" (click)="goAnswer()">View the answer →</button>
+        </div>
+      }
+
+    </div>
+  </div>
+</div>

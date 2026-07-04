@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
-import { GeminiService } from '../llm/gemini.service';
+import { ClaudeService } from '../llm/claude.service';
 import { Candidate, Evaluation, PhysicalLimitCheck, TechnicalContradiction } from './dto/reasoning.types';
 
 interface RawScore {
@@ -24,7 +23,7 @@ const WEIGHTS = { feasibility: 0.35, energyImpact: 0.3, equipmentStrain: 0.2, si
  */
 @Injectable()
 export class EvaluationService {
-  constructor(private readonly gemini: GeminiService) {}
+  constructor(private readonly claude: ClaudeService) {}
 
   async evaluate(
     contradiction: TechnicalContradiction,
@@ -50,14 +49,14 @@ export class EvaluationService {
       return rejected;
     }
 
-    const raw = await this.gemini.generateJson<{ scores: RawScore[] }>({
+    const raw = await this.claude.generateJson<{ scores: RawScore[] }>({
       systemInstruction:
         'You are a skeptical R&D reviewer evaluating candidate solutions to an engineering ' +
-        'contradiction. Score each candidate 0-10 on FOUR dimensions where 10 is always the BEST ' +
+        'contradiction. Score each candidate 0-100 on FOUR dimensions where 100 is always the BEST ' +
         'outcome: feasibility (physically/practically buildable with current or near-term tech), ' +
-        'energyImpact (10 = does not increase energy demand, 0 = drastically increases it), ' +
-        'equipmentStrain (10 = does not increase wear/strain on equipment, 0 = drastically increases it), ' +
-        'sideEffects (10 = minimal harmful side effects, 0 = severe side effects). Be a harsh, honest critic.',
+        'energyImpact (100 = does not increase energy demand, 0 = drastically increases it), ' +
+        'equipmentStrain (100 = does not increase wear/strain on equipment, 0 = drastically increases it), ' +
+        'sideEffects (100 = minimal harmful side effects, 0 = severe side effects). Be a harsh, honest critic.',
       prompt:
         `Original problem:\n"""\n${contradiction.problem}\n"""\n\n` +
         `Contradiction: ${contradiction.statement}\n` +
@@ -67,19 +66,19 @@ export class EvaluationService {
           .map((c) => `- id="${c.id}" [${c.basis}] ${c.title}: ${c.description}`)
           .join('\n'),
       schema: {
-        type: SchemaType.OBJECT,
+        type: 'object',
         properties: {
           scores: {
-            type: SchemaType.ARRAY,
+            type: 'array',
             items: {
-              type: SchemaType.OBJECT,
+              type: 'object',
               properties: {
-                candidateId: { type: SchemaType.STRING, enum: feasibleCandidates.map((c) => c.id) },
-                feasibility: { type: SchemaType.NUMBER },
-                energyImpact: { type: SchemaType.NUMBER },
-                equipmentStrain: { type: SchemaType.NUMBER },
-                sideEffects: { type: SchemaType.NUMBER },
-                reasoning: { type: SchemaType.STRING, description: '1-2 sentence justification for the scores.' },
+                candidateId: { type: 'string', enum: feasibleCandidates.map((c) => c.id) },
+                feasibility: { type: 'number' },
+                energyImpact: { type: 'number' },
+                equipmentStrain: { type: 'number' },
+                sideEffects: { type: 'number' },
+                reasoning: { type: 'string', description: '1-2 sentence justification for the scores.' },
               },
               required: ['candidateId', 'feasibility', 'energyImpact', 'equipmentStrain', 'sideEffects', 'reasoning'],
             },

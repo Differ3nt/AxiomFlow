@@ -1,0 +1,41 @@
+<!-- Overlay -->
+<div class="overlay" (click)="store.closeChat()" aria-hidden="true"></div>
+
+<!-- Panel -->
+<aside
+  id="chat-panel"
+  role="dialog"
+  aria-label="R&D assistant"
+  aria-modal="true"
+  class="panel"
+>
+  <div class="panel__header">
+    <div class="panel__title">◈ R&amp;D Assistant</div>
+    <button
+      class="close-btn"
+      (click)="store.closeChat()"
+      aria-label="Close"
+    >✕</button>
+  </div>
+
+  <div class="panel__body">
+    <div class="empty-state">
+      <div class="empty-icon">◈</div>
+      <div class="empty-text">Ask anything about this investigation</div>
+      <div class="suggestions">
+        @for (p of suggestedPrompts; track p) {
+          <button class="suggestion-chip">{{ p }}</button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="panel__input-bar">
+    <input
+      class="input"
+      aria-label="Message the assistant"
+      placeholder="Ask anything about this investigation…"
+    />
+    <button class="send-btn" aria-label="Send">➤</button>
+  </div>
+</aside>

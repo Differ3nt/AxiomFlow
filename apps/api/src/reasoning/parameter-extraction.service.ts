@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
-import { GeminiService } from '../llm/gemini.service';
+import { ClaudeService } from '../llm/claude.service';
 import { TrizDataService } from '../triz/triz-data.service';
 import { ProblemExtraction } from './dto/reasoning.types';
 
@@ -21,30 +20,30 @@ interface RawExtraction {
 @Injectable()
 export class ParameterExtractionService {
   constructor(
-    private readonly gemini: GeminiService,
+    private readonly claude: ClaudeService,
     private readonly trizData: TrizDataService,
   ) {}
 
-  async extract(problem: string): Promise<ProblemExtraction> {
+  async extract(problem: string, context?: string): Promise<ProblemExtraction> {
     const parameterNames = this.trizData.getParameters().map((p) => p.name);
 
-    const raw = await this.gemini.generateJson<RawExtraction>({
+    const raw = await this.claude.generateJson<RawExtraction>({
       systemInstruction:
         'You are a TRIZ analyst. Given a real-world engineering/product problem, identify the ' +
         'technical system and the ONE parameter the team wants to improve and the ONE parameter ' +
         'that worsens as a side effect, expressed strictly as two of the 39 standard TRIZ ' +
         'engineering parameters. Also list the hard real-world constraints mentioned in the problem ' +
         '(e.g. cost, energy access, material limits) as short phrases.',
-      prompt: `Problem statement:\n"""\n${problem}\n"""\n\nPick the improving and worsening parameter from this exact list: ${parameterNames.join(', ')}.`,
+      prompt: `Problem statement:\n"""\n${problem}\n"""\n${context ? `\nPrevious solution context to iterate on:\n"""\n${context}\n"""\n` : ''}\nPick the improving and worsening parameter from this exact list: ${parameterNames.join(', ')}.`,
       schema: {
-        type: SchemaType.OBJECT,
+        type: 'object',
         properties: {
-          technicalSystem: { type: SchemaType.STRING, description: 'Short name of the technical system/process under discussion.' },
-          improvingParameterName: { type: SchemaType.STRING, enum: parameterNames },
-          worseningParameterName: { type: SchemaType.STRING, enum: parameterNames },
+          technicalSystem: { type: 'string', description: 'Short name of the technical system/process under discussion.' },
+          improvingParameterName: { type: 'string', enum: parameterNames },
+          worseningParameterName: { type: 'string', enum: parameterNames },
           constraints: {
-            type: SchemaType.ARRAY,
-            items: { type: SchemaType.STRING },
+            type: 'array',
+            items: { type: 'string' },
             description: 'Short phrases describing real-world constraints from the problem statement.',
           },
         },
@@ -58,7 +57,7 @@ export class ParameterExtractionService {
 
     if (!improving || !worsening) {
       throw new Error(
-        `Gemini returned a parameter name outside the 39 TRIZ parameters: ` +
+        `Claude returned a parameter name outside the 39 TRIZ parameters: ` +
           `improving="${raw.improvingParameterName}" worsening="${raw.worseningParameterName}"`,
       );
     }

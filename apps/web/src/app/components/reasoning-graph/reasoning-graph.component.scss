@@ -1,0 +1,76 @@
+.graph-container {
+  display: flex;
+  height: 600px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.graph-main {
+  flex: 1;
+  position: relative;
+}
+
+.graph-side {
+  width: 350px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-elevated);
+  padding: 1rem;
+  overflow-y: auto;
+  
+  h3 {
+    margin-top: 0;
+    color: var(--text);
+  }
+  
+  .meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+}
+
+.data-block {
+  margin-bottom: 1rem;
+  
+  h4 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  
+  pre {
+    background: var(--bg);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 1px solid var(--border);
+    max-height: 250px;
+    overflow-y: auto;
+  }
+}
+
+:host ::ng-deep {
+  .node {
+    cursor: pointer;
+    outline: none;
+    
+    &:hover rect {
+      stroke: var(--accent);
+      stroke-width: 2;
+    }
+  }
+  
+  .edge {
+    stroke: var(--border-strong);
+  }
+  
+  .arrow-head {
+    fill: var(--border-strong);
+  }
+}
