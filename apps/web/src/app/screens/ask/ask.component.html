@@ -44,7 +44,7 @@
         [class.chip-btn--open]="store.askMethodOpen()"
         [attr.aria-expanded]="store.askMethodOpen()"
         (click)="store.toggleAskMethod()"
-      >⚙ Method <span class="chip-btn__label">TRIZ + Physics</span></button>
+      >⚙ Method <span class="chip-btn__label">{{ methodChipLabel() }}</span></button>
 
       <button
         class="chip-btn"
@@ -171,21 +171,57 @@
 
   <!-- Method collapsible -->
   @if (store.askMethodOpen()) {
-    <div class="collapsible" role="region" aria-label="Second analysis method">
-      <div class="collapsible__title">Second method</div>
-      <p class="method-hint">TRIZ is always used. Pair it with a second method for cross-validation.</p>
+    <div class="collapsible" role="region" aria-label="Analysis method">
+
+      <!-- TRIZ — always on -->
+      <div class="method-always">
+        <div class="method-always__inner">
+          <span class="method-always__icon">⚙</span>
+          <div class="method-always__text">
+            <span class="method-always__name">TRIZ Contradiction Matrix</span>
+            <span class="method-always__desc">Always active — maps your tradeoff to inventive principles from 400 000 patents.</span>
+          </div>
+          <span class="method-always__badge">Always on</span>
+        </div>
+      </div>
+
+      <div class="collapsible__title" style="margin-top: 16px;">Second method <span class="optional">— optional</span></div>
+      <p class="method-hint">Pair TRIZ with a second independent method for cross-validation. Or run TRIZ alone for a faster result.</p>
+
       <div class="method-list">
-        @for (m of methods; track m.name) {
+
+        <!-- TRIZ only option -->
+        <button
+          class="method-option"
+          [class.method-option--selected]="selectedSecond() === null"
+          (click)="selectSecond(null)"
+          [attr.aria-pressed]="selectedSecond() === null"
+        >
+          <div class="method-option__top">
+            <span class="method-icon">—</span>
+            <span class="method-name">TRIZ only</span>
+            @if (selectedSecond() === null) { <span class="method-check">✓</span> }
+          </div>
+          <div class="method-desc">Faster run, 3 candidates. No cross-validation.</div>
+        </button>
+
+        <!-- Second methods -->
+        @for (m of secondMethods; track m.name) {
           <button
             class="method-option"
-            [class.method-option--selected]="m.selected"
-            (click)="selectMethod(m)"
-            [attr.aria-pressed]="m.selected"
+            [class.method-option--selected]="selectedSecond() === m.name"
+            [class.method-option--unavailable]="!m.available"
+            [disabled]="!m.available"
+            (click)="m.available && selectSecond(m.name)"
+            [attr.aria-pressed]="selectedSecond() === m.name"
+            [attr.aria-disabled]="!m.available"
           >
             <div class="method-option__top">
               <span class="method-icon">{{ m.icon }}</span>
-              <span class="method-name">{{ m.name }}</span>
-              @if (m.selected) {
+              <span class="method-name">{{ m.label }}</span>
+              @if (!m.available) {
+                <span class="method-soon">Soon</span>
+              } @else if (selectedSecond() === m.name) {
                 <span class="method-check">✓</span>
               }
             </div>

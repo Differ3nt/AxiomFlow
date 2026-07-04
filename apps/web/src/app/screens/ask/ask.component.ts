@@ -8,13 +8,43 @@ import {
 
 
 
-interface Method { name: string; icon: string; desc: string; selected: boolean; }
+interface Method {
+  name: string;
+  icon: string;
+  label: string;
+  desc: string;
+  available: boolean;
+}
 
-const METHODS: Method[] = [
-  { name: 'First-principles', icon: '🌱', desc: 'Break the problem down to physics, rebuild without assumptions.', selected: true },
-  { name: 'SCAMPER',          icon: '🎨', desc: 'Systematic variations: Substitute, Combine, Adapt, Modify, Put to other use, Eliminate, Reverse.', selected: false },
-  { name: 'Biomimicry',       icon: '🦋', desc: 'Search for analogous solutions already evolved in nature.', selected: false },
-  { name: 'Morphological',    icon: '🧬', desc: 'Enumerate attribute combinations across a solution matrix.', selected: false },
+const SECOND_METHODS: Method[] = [
+  {
+    name: 'First-principles',
+    icon: '🌱',
+    label: 'Physics First',
+    desc: 'Decomposes the contradiction into thermodynamics, fluid dynamics, or electromagnetism. Runs in parallel with TRIZ — the best cross-validation.',
+    available: true,
+  },
+  {
+    name: 'SCAMPER',
+    icon: '🎨',
+    label: 'SCAMPER',
+    desc: 'Systematic variations: Substitute, Combine, Adapt, Modify, Put to other use, Eliminate, Reverse.',
+    available: false,
+  },
+  {
+    name: 'Biomimicry',
+    icon: '🦋',
+    label: 'Biomimicry',
+    desc: 'Search for analogous solutions already evolved in nature.',
+    available: false,
+  },
+  {
+    name: 'Morphological',
+    icon: '🧬',
+    label: 'Morphological',
+    desc: 'Enumerate attribute combinations across a solution matrix.',
+    available: false,
+  },
 ];
 
 const ERROR_REQUIREMENTS = [
@@ -34,9 +64,13 @@ const ERROR_REQUIREMENTS = [
 export class AskScreenComponent {
   readonly store = inject(InvestigationStore);
   readonly suggestedProblems = SUGGESTED_PROBLEMS;
-  readonly methods = METHODS;
+  readonly secondMethods = SECOND_METHODS;
   readonly errorRequirements = ERROR_REQUIREMENTS;
   readonly dragOver = signal(false);
+
+  readonly selectedSecond = signal<string | null>('First-principles');
+
+  readonly methodChipLabel = signal('TRIZ + Physics');
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -72,14 +106,20 @@ export class AskScreenComponent {
     if (files.length) this.store.addFiles(files);
   }
 
-  selectMethod(m: Method): void {
-    this.methods.forEach(x => (x.selected = false));
-    m.selected = true;
+  selectSecond(name: string | null): void {
+    this.selectedSecond.set(name);
+    if (name === null) {
+      this.methodChipLabel.set('TRIZ only');
+    } else {
+      const m = SECOND_METHODS.find(x => x.name === name);
+      this.methodChipLabel.set('TRIZ + ' + (m?.label ?? name));
+    }
   }
 
   start(): void {
-    const selectedMethods = this.methods.filter(m => m.selected).map(m => m.name);
-    this.store.startInvestigation(selectedMethods);
+    const second = this.selectedSecond();
+    const methods = second ? [second] : ['TRIZ'];
+    this.store.startInvestigation(methods);
   }
 
   formatSize(bytes: number): string {
