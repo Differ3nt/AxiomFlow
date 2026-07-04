@@ -1,6 +1,9 @@
 # Cloud Build config for apps/mcp. Run from the repo root:
 #   gcloud builds submit --config=apps/mcp/build-mcp.yaml \
 #     --substitutions=_REGION=us-central1,_REGISTRY_NAME=axiomflow,_SERVICE_NAME=axiomflow-mcp .
+#
+# Tags images :latest only (no :$SHORT_SHA) — this is submitted directly via
+# `gcloud builds submit`, not a source-repo trigger, so $SHORT_SHA is never populated.
 substitutions:
   _REGION: us-central1
   _REGISTRY_NAME: axiomflow
@@ -14,8 +17,6 @@ steps:
       - -f
       - apps/mcp/Dockerfile
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:$SHORT_SHA
-      - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
       - .
 
@@ -23,8 +24,7 @@ steps:
     id: push
     args:
       - push
-      - --all-tags
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
     waitFor: [build]
 
   - name: gcr.io/google.com/cloudsdktool/cloud-sdk
@@ -34,7 +34,7 @@ steps:
       - run
       - deploy
       - ${_SERVICE_NAME}
-      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:$SHORT_SHA
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
       - --region=${_REGION}
       - --platform=managed
       - --allow-unauthenticated
@@ -42,7 +42,6 @@ steps:
     waitFor: [push]
 
 images:
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:$SHORT_SHA
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
 
 options:
