@@ -37,23 +37,31 @@
     </ngx-graph>
   </div>
   
-  <aside class="graph-side" *ngIf="selectedNode() as nodeData">
-    <h3>{{nodeData.nodeName}}</h3>
-    <p class="meta">Latency: {{nodeData.latencyMs}}ms</p>
-    
-    <div class="data-block" *ngIf="nodeData.input">
-      <h4>Input</h4>
-      <pre>{{nodeData.input | json}}</pre>
-    </div>
-    
-    <div class="data-block" *ngIf="nodeData.output">
-      <h4>Output</h4>
-      <pre>{{nodeData.output | json}}</pre>
-    </div>
-    
-    <div class="data-block" *ngIf="nodeData.raw">
-      <h4>Raw / Verdict</h4>
-      <pre>{{nodeData.raw | json}}</pre>
-    </div>
-  </aside>
+  @if (selectedNode(); as nodeData) {
+    <aside class="graph-side">
+      <h3>{{nodeData.nodeName}}</h3>
+      <p class="meta">Latency: {{nodeData.latencyMs}}ms</p>
+
+      @if (nodeData.input) {
+        <div class="data-block">
+          <h4>Input</h4>
+          <pre>{{nodeData.input | json}}</pre>
+        </div>
+      }
+
+      @if (nodeData.output) {
+        <div class="data-block">
+          <h4>Output</h4>
+          <pre>{{nodeData.output | json}}</pre>
+        </div>
+      }
+
+      @if (nodeData.raw) {
+        <div class="data-block">
+          <h4>Raw / Verdict</h4>
+          <pre>{{nodeData.raw | json}}</pre>
+        </div>
+      }
+    </aside>
+  }
 </div>

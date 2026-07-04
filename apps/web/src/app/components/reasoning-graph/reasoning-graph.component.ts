@@ -1,17 +1,17 @@
-import { ChangeDetectionStrategy, Component, effect, inject, signal, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InvestigationStore } from '../../state/investigation.store';
 import { NgxGraphModule } from '@swimlane/ngx-graph';
 
 @Component({
-  selector: 'aqt-reasoning-graph',
+  selector: 'app-reasoning-graph',
   standalone: true,
   imports: [CommonModule, NgxGraphModule],
   templateUrl: './reasoning-graph.component.html',
   styleUrls: ['./reasoning-graph.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ReasoningGraphComponent implements OnInit {
+export class ReasoningGraphComponent {
   store = inject(InvestigationStore);
 
   nodes = signal<any[]>([]);
@@ -26,8 +26,6 @@ export class ReasoningGraphComponent implements OnInit {
       }
     });
   }
-
-  ngOnInit() {}
 
   async fetchTrail(runId: string) {
     try {
