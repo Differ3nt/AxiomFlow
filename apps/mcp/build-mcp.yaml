@@ -41,6 +41,21 @@ steps:
       - --port=8080
     waitFor: [push]
 
+  # `--allow-unauthenticated` above has occasionally failed to attach the allUsers/run.invoker
+  # binding silently; this makes public access explicit and idempotent on every deploy.
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: allow-public-access
+    entrypoint: gcloud
+    args:
+      - run
+      - services
+      - add-iam-policy-binding
+      - ${_SERVICE_NAME}
+      - --region=${_REGION}
+      - --member=allUsers
+      - --role=roles/run.invoker
+    waitFor: [deploy]
+
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
 
