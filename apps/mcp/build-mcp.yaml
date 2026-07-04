@@ -59,5 +59,10 @@ steps:
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
 
+# Run build steps as our own least-privilege deployer SA, not Cloud Build's default
+# compute service account (which lacks run.services.setIamPolicy and caused the
+# "allow-public-access" step to fail with PERMISSION_DENIED on the first real deploy).
+serviceAccount: projects/$PROJECT_ID/serviceAccounts/github-actions-deployer@$PROJECT_ID.iam.gserviceaccount.com
+
 options:
   logging: CLOUD_LOGGING_ONLY
