@@ -6,7 +6,7 @@ COPY package.json package-lock.json nx.json tsconfig.base.json ./
 COPY apps/mcp apps/mcp
 COPY libs/triz-core libs/triz-core
 
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 RUN npx nx run mcp:build:production
 
 # Runtime stage only needs the bundled server plus its runtime npm deps
