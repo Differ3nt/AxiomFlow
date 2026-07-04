@@ -21,7 +21,7 @@ interface RawTrizCandidate {
 export class TrizCandidateService {
   constructor(private readonly claude: ClaudeService) {}
 
-  async generate(contradiction: TechnicalContradiction, principles: TrizPrinciple[], temperature: number = 0.6): Promise<Candidate[]> {
+  async generate(contradiction: TechnicalContradiction, principles: TrizPrinciple[], temperature = 0.6): Promise<Candidate[]> {
     const chosen = principles.slice(0, 3);
     const principleIds = chosen.map((p) => p.id);
 

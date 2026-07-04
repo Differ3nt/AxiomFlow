@@ -18,7 +18,7 @@ interface RawPhysicsCandidate {
 export class PhysicsFirstService {
   constructor(private readonly claude: ClaudeService) {}
 
-  async generate(contradiction: TechnicalContradiction, temperature: number = 0.7): Promise<Candidate[]> {
+  async generate(contradiction: TechnicalContradiction, temperature = 0.7): Promise<Candidate[]> {
     const raw = await this.claude.generateJson<{ candidates: RawPhysicsCandidate[] }>({
       systemInstruction:
         'You are a first-principles physics consultant. Propose exactly 3 distinct, physically plausible solution ' +
