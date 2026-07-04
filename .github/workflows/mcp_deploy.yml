@@ -1,0 +1,44 @@
+name: Lint & Deploy (MCP server)
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx nx run-many --target=lint --all
+
+  deploy:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and deploy apps/mcp via Cloud Build
+        run: |
+          gcloud builds submit \
+            --config=apps/mcp/build-mcp.yaml \
+            --substitutions=_REGION=${{ vars.GCP_REGION }},_REGISTRY_NAME=${{ vars.GCP_REGISTRY_NAME }},_SERVICE_NAME=axiomflow-mcp \
+            --project=${{ vars.GCP_PROJECT }} \
+            .
+
+      - name: Show deployed URL
+        run: |
+          gcloud run services describe axiomflow-mcp \
+            --region=${{ vars.GCP_REGION }} \
+            --project=${{ vars.GCP_PROJECT }} \
+            --format='value(status.url)'
