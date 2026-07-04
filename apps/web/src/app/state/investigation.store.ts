@@ -34,6 +34,17 @@ export interface LogLine {
   text: string;
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface AttachedFile {
+  name: string;
+  size: number;
+  type: string;
+}
+
 export interface SuggestedProblem {
   text: string;
   draft: string;
@@ -79,23 +90,30 @@ export class InvestigationStore {
   readonly currentRunId = signal<string | null>(null);
 
   // ---- Process ----
-  readonly activeStep     = signal(0);
-  readonly focusStep      = signal(0);
-  readonly consoleVisible = signal(3);
-  readonly compareOpen    = signal(false);
-  readonly logOpen        = signal(false);
+  readonly activeStep = signal(0);
+  readonly focusStep  = signal(0);
+  readonly logOpen    = signal(false);
 
   // ---- Answer ----
-  readonly answerSections = signal<Record<string, boolean>>({ s1: false, s2: false, s3: false, s4: false, s5: false });
+  readonly answerSections  = signal<Record<string, boolean>>({ s1: false, s2: false, s3: false, s4: false, s5: false });
   readonly whiteCandidates = signal<Candidate[]>([]);
   readonly greenCandidates = signal<Candidate[]>([]);
-  readonly consoleLogList = signal<LogLine[]>([]);
-  readonly winner = signal<any>(null);
-  
+  readonly consoleLogList  = signal<LogLine[]>([]);
+  readonly winner          = signal<any>(null);
+  readonly approved = signal(false);
+
   readonly topCandidates = signal<any[]>([]);
   readonly allCandidates = signal<any[]>([]);
-  readonly kpis = signal<any[]>([]);
-  readonly sections = signal<any[]>([]);
+  readonly kpis          = signal<any[]>([]);
+  readonly sections      = signal<any[]>([]);
+
+  // ---- Chat ----
+  readonly chatMessages = signal<ChatMessage[]>([]);
+  readonly chatLoading  = signal(false);
+  readonly chatInput    = signal('');
+
+  // ---- Documents ----
+  readonly attachedFiles = signal<AttachedFile[]>([]);
 
   // ---- Computed ----
   readonly isAsk     = computed(() => this.screen() === 'ask');
@@ -123,6 +141,16 @@ export class InvestigationStore {
       ? 'Investigation complete · winner ready'
       : `Analyzing · step ${Math.min(this.activeStep(), 5) + 1} of 6`
   );
+
+  readonly reportContext = computed(() => {
+    const top = this.topCandidates();
+    const w = this.winner();
+    if (!top.length && !w) return '';
+    const lines: string[] = [`Problem: ${this.problemDraft()}`];
+    if (w) lines.push(`Winner: ${w.title ?? w.name}`);
+    top.forEach((c, i) => lines.push(`Rank ${i + 1}: ${c.name} (${c.confidence}% confidence, ${c.trizPrinciple})`));
+    return lines.join('\n');
+  });
 
   private _stepTimer?: ReturnType<typeof setInterval>;
   private _logTimer?:  ReturnType<typeof setInterval>;
@@ -161,8 +189,7 @@ export class InvestigationStore {
 
   setFocusStep(idx: number): void { this.focusStep.set(idx); }
 
-  toggleCompare(): void { this.compareOpen.update(v => !v); }
-  toggleLog():     void { this.logOpen.update(v => !v); }
+  toggleLog(): void { this.logOpen.update(v => !v); }
 
   toggleAskDocs():   void { this.askDocsOpen.update(v => !v); }
   toggleAskMethod(): void { this.askMethodOpen.update(v => !v); }
@@ -176,6 +203,43 @@ export class InvestigationStore {
   fillExample(): void {
     this.problemDraft.set('We need to get more freshwater out of our desalination plant without a matching jump in electricity use or membrane wear. The feed water is high-salinity reject brine from a chemical plant. Cost has to stay within 10% of our current baseline.');
     this.askError.set(false);
+  }
+
+  toggleApproved(): void { this.approved.update(v => !v); }
+
+  addFiles(files: File[]): void {
+    const next = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
+    this.attachedFiles.update(existing => {
+      const names = new Set(existing.map(e => e.name));
+      return [...existing, ...next.filter(f => !names.has(f.name))];
+    });
+  }
+
+  removeFile(name: string): void {
+    this.attachedFiles.update(files => files.filter(f => f.name !== name));
+  }
+
+  setChatInput(val: string): void { this.chatInput.set(val); }
+
+  async sendChatMessage(text: string): Promise<void> {
+    const trimmed = text.trim();
+    if (!trimmed || this.chatLoading()) return;
+    this.chatMessages.update(msgs => [...msgs, { role: 'user', text: trimmed }]);
+    this.chatInput.set('');
+    this.chatLoading.set(true);
+    try {
+      const res = await fetch('http://localhost:3000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: trimmed, context: this.reportContext() }),
+      });
+      const data = await res.json();
+      this.chatMessages.update(msgs => [...msgs, { role: 'assistant', text: data.reply }]);
+    } catch {
+      this.chatMessages.update(msgs => [...msgs, { role: 'assistant', text: 'Could not reach the assistant. Make sure the API is running.' }]);
+    } finally {
+      this.chatLoading.set(false);
+    }
   }
 
   iterateWithCandidate(context: string, methods: string[] = ['First-principles']): void {
@@ -200,7 +264,6 @@ export class InvestigationStore {
     this.screen.set('process');
     this.activeStep.set(0);
     this.focusStep.set(0);
-    this.consoleVisible.set(0);
     this.consoleLogList.set([]);
     this.whiteCandidates.set([]);
     this.greenCandidates.set([]);
@@ -319,6 +382,8 @@ export class InvestigationStore {
               title: 'Why this solution won',
               icon: '🏆',
               body: report.choice.justification,
+              description: report.choice.candidate.description,
+              basis: report.choice.candidate.basis,
             },
             {
               key: 's3',
@@ -344,10 +409,6 @@ export class InvestigationStore {
     } catch (err) {
       console.error('API call failed', err);
     }
-  }
-
-  startDemo(): void {
-    // left empty, removed mock timer
   }
 
   destroy(): void {

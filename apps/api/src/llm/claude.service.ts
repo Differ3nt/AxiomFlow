@@ -33,6 +33,25 @@ export class ClaudeService {
     this.client = new Anthropic({ apiKey });
   }
 
+  async generateText(params: {
+    systemInstruction: string;
+    prompt: string;
+    temperature?: number;
+  }): Promise<string> {
+    this.logger.debug(`Calling Claude text (${this.modelName})`);
+    const response = await this.client.messages.create({
+      model: this.modelName,
+      max_tokens: 1024,
+      temperature: params.temperature ?? 0.7,
+      system: params.systemInstruction,
+      messages: [{ role: 'user', content: params.prompt }],
+    });
+    const textBlock = response.content.find(
+      (block): block is Anthropic.TextBlock => block.type === 'text',
+    );
+    return textBlock?.text ?? '';
+  }
+
   async generateJson<T>(params: {
     systemInstruction: string;
     prompt: string;

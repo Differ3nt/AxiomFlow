@@ -9,7 +9,6 @@
           <div class="winner-label font-mono">Top-ranked solution</div>
           <h1 class="winner-name">{{ topCandidates()[0].name }}</h1>
           <div class="winner-meta">
-            <span class="winner-chip winner-chip--triz">{{ topCandidates()[0].trizPrinciple }}</span>
             <span class="winner-chip winner-chip--conf font-mono">{{ topCandidates()[0].confidence }}% confidence</span>
           </div>
         </div>
@@ -19,17 +18,16 @@
 
   <!-- Action strip -->
   <div class="action-strip" role="toolbar" aria-label="Answer actions">
-    <button class="btn-approve" aria-label="Approve and sign this solution">
-      ✓ Approve &amp; sign
+    <button
+      class="btn-approve"
+      [class.btn-approve--done]="store.approved()"
+      aria-label="Approve and sign this solution"
+      (click)="approve()"
+    >
+      {{ store.approved() ? '✓ Approved' : '✓ Approve & sign' }}
     </button>
-    <button class="btn-ghost" aria-label="Download PDF report">
-      ↓ Download PDF
-    </button>
-    <button class="btn-ghost" aria-label="Share this result">
-      ↗ Share
-    </button>
-    <button class="btn-ghost" aria-label="Rate this result">
-      ★ Rate
+    <button class="btn-ghost" aria-label="Download report" (click)="downloadPdf()">
+      ↓ Download report
     </button>
   </div>
 
@@ -65,36 +63,17 @@
           <span class="top-card__conf font-mono">{{ c.confidence }}%</span>
         </div>
         <div class="top-card__footer">
-          <span class="top-card__principle font-mono">{{ c.trizPrinciple }}</span>
           <button class="btn-ghost" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" (click)="iterate(c.summary)">Iterate ↺</button>
         </div>
       </article>
     }
   </section>
 
-  <!-- KPI grid & Radiant Graph -->
-  <section class="kpi-section" aria-label="Key performance indicators">
-    <h2 class="section-heading">Projected KPIs & Candidate Comparison</h2>
-    <div style="display: flex; gap: 2rem; align-items: stretch; flex-wrap: wrap;">
-      <div class="kpi-grid" style="flex: 1; min-width: 300px;">
-        @for (k of kpis(); track k.label) {
-          <div class="kpi-card" [attr.aria-label]="k.label + ': ' + k.value">
-            <div class="kpi-label">{{ k.label }}</div>
-            <div class="kpi-value font-mono" [style.color]="k.deltaPositive ? 'var(--accent-strong)' : 'var(--warning-strong)'">
-              {{ k.value }}
-            </div>
-            @if (k.delta) {
-              <div class="kpi-delta font-mono" [style.color]="k.deltaPositive ? 'var(--accent)' : 'var(--warning)'">
-                {{ k.delta }}
-              </div>
-            }
-            <div class="kpi-note">{{ k.note }}</div>
-          </div>
-        }
-      </div>
-      <div class="kpi-chart" style="flex: 1; min-width: 350px; height: 400px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; position: relative;">
-        <div echarts [options]="chartOptions()" style="height: 100%; width: 100%; display: block; min-height: 380px;"></div>
-      </div>
+  <!-- Candidate Comparison Graph -->
+  <section class="kpi-section" aria-label="Candidate comparison">
+    <h2 class="section-heading">Candidate Comparison</h2>
+    <div class="radar-chart-wrap">
+      <div echarts [options]="chartOptions()" class="radar-chart"></div>
     </div>
   </section>
 
@@ -123,7 +102,25 @@
             [id]="'sec-' + sec.key"
             role="region"
           >
-            @if (sec.key === 's3') {
+            @if (sec.key === 's1') {
+              <!-- Why this solution won — structured prose -->
+              <div class="why-won">
+                @if (sec.description) {
+                  <p class="why-won__lead">{{ sec.description }}</p>
+                }
+                <div class="why-won__paras">
+                  @for (para of splitIntoParagraphs(sec.body); track $index) {
+                    <p class="why-won__para">{{ para }}</p>
+                  }
+                </div>
+                @if (sec.basis) {
+                  <div class="why-won__basis">
+                    <span class="why-won__basis-label">Inventive principle</span>
+                    <span class="why-won__basis-text">{{ sec.basis }}</span>
+                  </div>
+                }
+              </div>
+            } @else if (sec.key === 's3') {
               <!-- All candidates table -->
               <div class="candidates-table-wrap">
                 <table class="candidates-table" aria-label="All 6 candidates">
@@ -133,8 +130,7 @@
                       <th scope="col">Solution</th>
                       <th scope="col">Method</th>
                       <th scope="col">Confidence</th>
-                      <th scope="col">Payback</th>
-                      <th scope="col">TRIZ Principle</th>
+                      <th scope="col">Basis</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -158,7 +154,6 @@
                             <span class="font-mono">{{ c.confidence > 0 ? c.confidence + '%' : '—' }}</span>
                           </div>
                         </td>
-                        <td class="font-mono">{{ c.payback }}</td>
                         <td class="font-mono principle-cell">{{ c.trizPrinciple }}</td>
                       </tr>
                     }

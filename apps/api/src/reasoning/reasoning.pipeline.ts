@@ -102,7 +102,7 @@ export class ReasoningPipeline {
 
     emitEvent('step', { step: 5 });
     this.logger.log('Step 6/6: building the report...');
-    const finalReport = this.report.build({
+    const finalReport = await this.report.build({
       contradiction,
       matchedInMatrix: matrixResult.matched,
       trizPrinciplesUsed: matrixResult.principles,

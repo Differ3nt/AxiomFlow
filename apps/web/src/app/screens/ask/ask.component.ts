@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, ViewChild, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -36,12 +36,41 @@ export class AskScreenComponent {
   readonly suggestedProblems = SUGGESTED_PROBLEMS;
   readonly methods = METHODS;
   readonly errorRequirements = ERROR_REQUIREMENTS;
+  readonly dragOver = signal(false);
+
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   useSuggestion(draft: string): void {
     this.store.setProblemDraft(draft);
   }
 
+  openFilePicker(): void {
+    this.fileInput.nativeElement.click();
+  }
 
+  onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files?.length) {
+      this.store.addFiles(Array.from(input.files));
+      input.value = '';
+    }
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.dragOver.set(true);
+  }
+
+  onDragLeave(): void {
+    this.dragOver.set(false);
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.dragOver.set(false);
+    const files = Array.from(event.dataTransfer?.files ?? []);
+    if (files.length) this.store.addFiles(files);
+  }
 
   selectMethod(m: Method): void {
     this.methods.forEach(x => (x.selected = false));
@@ -51,5 +80,11 @@ export class AskScreenComponent {
   start(): void {
     const selectedMethods = this.methods.filter(m => m.selected).map(m => m.name);
     this.store.startInvestigation(selectedMethods);
+  }
+
+  formatSize(bytes: number): string {
+    return bytes < 1024 * 1024
+      ? `${Math.round(bytes / 1024)} KB`
+      : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   }
 }

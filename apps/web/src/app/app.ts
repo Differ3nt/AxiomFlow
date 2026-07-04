@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnDestroy } from '@angular/core';
+import { ChangeDetectionStrategy, Component, HostListener, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InvestigationStore } from './state/investigation.store';
 import { TopBarComponent } from './components/top-bar/top-bar.component';
@@ -24,6 +24,12 @@ import { AnswerScreenComponent } from './screens/answer/answer.component';
 })
 export class App implements OnDestroy {
   readonly store = inject(InvestigationStore);
+
+  @HostListener('document:keydown.meta.k', ['$event'])
+  onCmdK(event: Event): void {
+    event.preventDefault();
+    this.store.toggleChat();
+  }
 
   ngOnDestroy(): void {
     this.store.destroy();

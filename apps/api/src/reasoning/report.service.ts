@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ClaudeService } from '../llm/claude.service';
 import { TrizPrinciple } from '../triz/triz-data.service';
 import {
   Candidate,
@@ -8,22 +9,52 @@ import {
   TechnicalContradiction,
 } from './dto/reasoning.types';
 
-/** Step 6: assemble the 5 required sections (problem, contradiction, candidates, evaluation, choice) — pure code, no LLM. */
+/** Step 6: assemble the final report and generate a rich written justification via LLM. */
 @Injectable()
 export class ReportService {
-  build(params: {
+  constructor(private readonly claude: ClaudeService) {}
+
+  async build(params: {
     contradiction: TechnicalContradiction;
     matchedInMatrix: boolean;
     trizPrinciplesUsed: TrizPrinciple[];
     candidates: Candidate[];
     physicalLimitChecks: PhysicalLimitCheck[];
     evaluations: Evaluation[];
-  }): ReasoningReport {
-    const winnerEval = [...params.evaluations].sort((a, b) => b.score - a.score)[0];
+  }): Promise<ReasoningReport> {
+    const sorted = [...params.evaluations].sort((a, b) => b.score - a.score);
+    const winnerEval = sorted[0];
     const winnerCandidate = params.candidates.find((c) => c.id === winnerEval.candidateId);
     if (!winnerCandidate) {
       throw new Error(`Could not find candidate for winning evaluation id ${winnerEval.candidateId}`);
     }
+
+    const runnerUp = params.candidates.find((c) => c.id === sorted[1]?.candidateId);
+    const runnerUpEval = sorted[1];
+
+    const justification = await this.claude.generateText({
+      systemInstruction:
+        'You are a senior R&D engineer writing a concise but substantive selection report. ' +
+        'Write in clear, professional prose — no bullet points, no markdown. ' +
+        'Three paragraphs of 3-4 sentences each.',
+      prompt:
+        `Problem: ${params.contradiction.problem}\n\n` +
+        `Technical contradiction resolved: ${params.contradiction.statement}\n\n` +
+        `Selected solution: "${winnerCandidate.title}"\n` +
+        `Description: ${winnerCandidate.description}\n` +
+        `Scores (0-100): feasibility ${winnerEval.feasibility}, energy impact ${winnerEval.energyImpact}, ` +
+        `equipment strain ${winnerEval.equipmentStrain}, side effects ${winnerEval.sideEffects}, ` +
+        `composite ${winnerEval.score.toFixed(1)}\n` +
+        `Evaluation reasoning: ${winnerEval.reasoning}\n\n` +
+        (runnerUp && runnerUpEval
+          ? `Runner-up for comparison: "${runnerUp.title}" — composite score ${runnerUpEval.score.toFixed(1)}\n\n`
+          : '') +
+        `Write three paragraphs:\n` +
+        `1. Why this solution was chosen over the alternatives — reference the scores and what they mean in engineering terms.\n` +
+        `2. How it resolves the technical contradiction and what physical/engineering principles make it work.\n` +
+        `3. Key practical strengths and any limitations or risks an implementation team should be aware of.`,
+      temperature: 0.5,
+    });
 
     return {
       problem: params.contradiction.problem,
@@ -36,9 +67,7 @@ export class ReportService {
       choice: {
         candidate: winnerCandidate,
         evaluation: winnerEval,
-        justification:
-          `Selected "${winnerCandidate.title}" (${winnerCandidate.method.toUpperCase()}, ${winnerCandidate.basis}) ` +
-          `with the highest weighted score (${winnerEval.score.toFixed(2)}/10) among ${params.evaluations.length} evaluated candidates.`,
+        justification,
       },
     };
   }

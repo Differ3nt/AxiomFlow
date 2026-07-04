@@ -118,11 +118,52 @@
         Reference documents
         <span class="optional">— optional</span>
       </div>
-      <div class="dropzone">
+
+      <input
+        #fileInput
+        type="file"
+        multiple
+        accept=".pdf,.txt,.csv"
+        style="display:none"
+        (change)="onFilesSelected($event)"
+        aria-hidden="true"
+        tabindex="-1"
+      />
+
+      <div
+        class="dropzone"
+        [class.dropzone--over]="dragOver()"
+        (click)="openFilePicker()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop($event)"
+        role="button"
+        tabindex="0"
+        aria-label="Drop files or click to browse"
+        (keydown.enter)="openFilePicker()"
+        (keydown.space)="openFilePicker()"
+      >
         <div class="dropzone-icon">📁</div>
         <div class="dropzone-text">Drop files, or click to browse</div>
         <div class="dropzone-hint">PDF / TXT / CSV up to 10 MB · plant specs, past reports, industry papers</div>
       </div>
+
+      @if (store.attachedFiles().length > 0) {
+        <ul class="file-list" aria-label="Attached files">
+          @for (f of store.attachedFiles(); track f.name) {
+            <li class="file-item">
+              <span class="file-icon">📄</span>
+              <span class="file-name">{{ f.name }}</span>
+              <span class="file-size font-mono">{{ formatSize(f.size) }}</span>
+              <button
+                class="file-remove"
+                (click)="store.removeFile(f.name)"
+                [attr.aria-label]="'Remove ' + f.name"
+              >✕</button>
+            </li>
+          }
+        </ul>
+      }
     </div>
   }
 
