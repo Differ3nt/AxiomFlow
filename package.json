@@ -1,0 +1,60 @@
+{
+  "name": "@axiomflow/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "solve": "nx run api:build && node dist/apps/api/main.cjs"
+  },
+  "private": true,
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@nestjs/common": "^11.1.27",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.27",
+    "@nestjs/platform-express": "^11.1.27",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "dotenv": "^17.4.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.8.0",
+    "@nx/esbuild": "22.7.6",
+    "@nx/eslint": "22.7.6",
+    "@nx/eslint-plugin": "22.7.6",
+    "@nx/jest": "22.7.6",
+    "@nx/js": "22.7.6",
+    "@nx/nest": "22.7.6",
+    "@nx/node": "22.7.6",
+    "@nx/workspace": "22.7.6",
+    "@swc-node/register": "~1.11.1",
+    "@swc/core": "~1.15.5",
+    "@swc/helpers": "~0.5.18",
+    "@types/jest": "~30.0.0",
+    "@types/node": "20.19.9",
+    "esbuild": "^0.27.0",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^10.0.0",
+    "jest": "~30.3.0",
+    "jest-environment-node": "~30.3.0",
+    "jest-util": "~30.3.0",
+    "jsonc-eslint-parser": "^2.1.0",
+    "nx": "22.7.6",
+    "prettier": "~3.6.2",
+    "ts-jest": "^29.4.0",
+    "ts-node": "10.9.1",
+    "tslib": "^2.3.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.40.0"
+  },
+  "allowScripts": {
+    "@swc/core@1.15.43": true,
+    "esbuild@0.27.7": true,
+    "fsevents@2.3.3": true,
+    "nx@22.7.6": true,
+    "unrs-resolver@1.12.2": true
+  }
+}

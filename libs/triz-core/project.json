@@ -1,0 +1,20 @@
+{
+  "name": "triz-core",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/triz-core/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/triz-core",
+        "main": "libs/triz-core/src/index.ts",
+        "tsConfig": "libs/triz-core/tsconfig.lib.json",
+        "assets": ["libs/triz-core/*.md"],
+        "format": ["cjs"]
+      }
+    }
+  }
+}

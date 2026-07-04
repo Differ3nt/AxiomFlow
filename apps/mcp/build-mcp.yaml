@@ -1,0 +1,49 @@
+# Cloud Build config for apps/mcp. Run from the repo root:
+#   gcloud builds submit --config=apps/mcp/build-mcp.yaml \
+#     --substitutions=_REGION=us-central1,_REGISTRY_NAME=axiomflow,_SERVICE_NAME=axiomflow-mcp .
+substitutions:
+  _REGION: us-central1
+  _REGISTRY_NAME: axiomflow
+  _SERVICE_NAME: axiomflow-mcp
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    id: build
+    args:
+      - build
+      - -f
+      - apps/mcp/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    id: push
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp
+    waitFor: [build]
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE_NAME}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+    waitFor: [push]
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REGISTRY_NAME}/mcp:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
