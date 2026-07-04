@@ -109,18 +109,129 @@ Currently `main.ts` runs `NestFactory.createApplicationContext` (headless). Add:
 - Every pipeline node calls `this.trail.record(runId, nodeName, {input, output, raw, tokens, latencyMs})`.
 - Local dev via Docker Compose (Postgres 16). Reuse the pattern from `nan-stack-main`.
 
-### 5.3 Angular 21 frontend
-- `apps/web` — generated via `nx g @nx/angular:app web` (standalone components, `provideRouter`, `provideHttpClient(withFetch())`).
-- **Design tokens** first: `libs/ui/tokens/tokens.ts` generated from the YAML front-matter of `AxiomFlowDrive/AQUATRIZ_DESIGN.md`. Emits CSS custom properties on `:root` + a TS map for JS access. Nothing in components hard-codes hex, spacing, or radius. **This is the Day-2 evidence.**
-- **Component library** in `libs/ui/components/`: `KpiCard`, `PipelineStepper`, `CandidateCard`, `ContradictionGuardBadge`, `EvaluationMatrix`, `ConsoleLog`, `ReasoningTrailPanel`, `ChatBubble`, `FileDropzone`, `TemperatureSlider`, `StatusDot`. Standalone components, `ChangeDetectionStrategy.OnPush`, `input()`/`output()` signals.
-- **Data access** in `libs/data-access/api/` — `openapi-typescript` generates types from the Nest OpenAPI JSON; a hand-written `RunsClient` wraps `fetch`/`EventSource`. No handwritten DTOs, no drift.
-- **Screens** (mirror AQUATRIZ_DESIGN.md §Ekrany):
-  1. Mission Control dashboard
-  2. New Project wizard (Biały Kapelusz)
-  3. Pipeline stepper (6 nodes, SSE-driven live status)
-  4. Dual-agent split view (TRIZ ⚙️ vs Synectics 🔬)
-  5. Reasoning trail report (collapsible + comparison matrix + **ng-diagram** graph)
-  6. Chat panel (slide-in 360px)
+### 5.3 Angular 21 frontend — port of `AquaTRIZ.html`
+
+The interactive mockup at `/AquaTRIZ.html` is the single source of truth for the frontend. It's a self-contained `dc-runtime` React component with all layout, state, animations, and even seed data baked in. The Angular build is a **1:1 port**, not a reinterpretation.
+
+**Overall UX model** (differs from `AQUATRIZ_DESIGN.md`'s 6-screen SCADA layout — the mockup is a much cleaner 3-state investigation flow):
+
+```
+   Ask  ──startInvestigation──▶  Process  ──processDone──▶  Answer
+    ▲                                                          │
+    └─────────────── goAsk (Add context and re-run) ──────────┘
+
+   Chat panel is orthogonal to all three (chatOpen boolean).
+   Theme (light/dark) persists in localStorage under 'aqt-theme-v2'.
+```
+
+Route strategy: single-page with `?screen=ask|process|answer&run=<id>` query params. `screen` drives `<router-outlet>`; `run` drives the store hydration. This keeps deep-links and browser-back working without proliferating routes.
+
+**Angular scaffold**
+- `apps/web` — generated via `nx g @nx/angular:app web` (standalone components, `provideRouter`, `provideHttpClient(withFetch())`, `provideExperimentalZonelessChangeDetection()`).
+- State: **NgRx Signals Store** (single `InvestigationStore`) — the mockup's state slice ports 1:1 (see §5.3.3 below).
+- **Design tokens** first: `libs/ui/tokens/tokens.scss` emits CSS custom properties on `:root` and `[data-theme="dark"]`. The mockup already references the whole set — every value that follows must exist as a token:
+
+  | Category | Tokens present in mockup |
+  |---|---|
+  | Surfaces | `--bg`, `--bg-elevated`, `--card`, `--card-hover`, `--overlay` |
+  | Text | `--text`, `--text-muted`, `--text-dim`, `--text-faint` |
+  | Borders | `--border`, `--border-strong`, `--focus-ring` |
+  | Accent (green) | `--accent`, `--accent-hover`, `--accent-strong`, `--accent-text`, `--accent-soft-bg`, `--accent-soft-border` |
+  | Info (blue) | `--info`, `--info-soft-bg` |
+  | Warning (amber) | `--warning`, `--warning-strong`, `--warning-soft-bg`, `--warning-soft-border` |
+  | Semantic extras | `--violet` (SCORE/RANK log levels), `--shadow-md` |
+
+  Both light and dark palettes must define every one of them. Grep `apps/web/**/*.{ts,html,scss}` for hex literals — result must be empty (CI rule).
+
+- **Data access** in `libs/data-access/api/` — `openapi-typescript` generates types from Nest's OpenAPI JSON; a hand-written `InvestigationsClient` wraps `fetch` + `EventSource` for SSE. No handwritten DTOs, no drift.
+
+### 5.3.1 Screens (verbatim from the mockup)
+
+| # | Screen | State flag | What it shows | Key mockup lines |
+|---|---|---|---|---|
+| 1 | **Ask** | `screen === 'ask'` | Hero prompt · problem `<textarea>` · 4 chip toggles (Docs / SDG / Method / Advanced) · CTA "Start investigation" · client-side validation (min 12 words → shake + missing-ingredients banner) · suggested problems row · recent investigations list | 660–842 |
+| 2 | **Process** | `screen === 'process'` | Sticky left aside with 6 step chips (done/active/pending) · main focus card for `focusStep` with subtasks and result summary · collapsible **Compare candidates** panel (white = TRIZ, green = second method) · collapsible **Console log** panel with levels (READ / INDEX / FETCH / TRIZ / PHYS / DRAFT / SCORE / RANK / SIGN) · `processDone` → CTA "View the answer" | 847–999 |
+| 3 | **Answer** | `screen === 'answer'` | Winner banner (gradient, checkmark, Confidence + Payback) · action strip (Approve & sign · Download PDF · Share · Rate) · **Three-answer grid** (rank badges, method label, confidence bar, payback, SDG score) · KPI grid (label + monospace value + delta + plain-language explanation) · "More detail" collapsibles · "Not satisfied?" re-run CTA back to Ask | 1004–1121 |
+| — | **Chat panel** | `chatOpen === true` | Modal `<aside role="dialog">` 420px from right, overlay backdrop, message thread, suggested prompts, input + send button | 1126–1170 |
+| — | **Top bar** | always | Home logo (goAsk) · breadcrumb (when applicable) · **step chips duplicated in header during Process** · theme toggle · assistant toggle (`⌘K`) | 614–654 |
+
+### 5.3.2 Component decomposition (Angular)
+
+Each component below maps to a marked-up region in the mockup. All standalone, `ChangeDetectionStrategy.OnPush`, signal inputs/outputs.
+
+`libs/ui/components/`:
+- `AppShellComponent` — top bar + `<main>` + optional chat aside slot
+- `ThemeToggleButtonComponent` — persists to `localStorage['aqt-theme-v2']`
+- `StepChipComponent` — the 26×26 numbered chip; inputs: `n`, `status`, `active`, `pulse`; `aria-label` derived
+- `AskScreenComponent` — hero heading + textarea + chip row + validation + suggestions
+  - subcomponents: `ChipToggleComponent`, `DocumentsCollapsibleComponent`, `SdgCollapsibleComponent`, `MethodCollapsibleComponent`, `AdvancedCollapsibleComponent`, `AskErrorBannerComponent`, `SuggestedProblemsRowComponent`, `RecentInvestigationsListComponent`
+- `ProcessScreenComponent` — split layout with sticky aside
+  - `StepListComponent` (aside) + `FocusStepCardComponent` (main) + `SubtaskListComponent` + `CompareCandidatesPanelComponent` + `ConsoleLogPanelComponent`
+- `AnswerScreenComponent` — winner banner + actions + three-answer grid + KPI grid + detail sections + re-run CTA
+  - `WinnerBannerComponent`, `AnswerActionStripComponent`, `AnswerCardComponent`, `KpiCardComponent`, `AnswerSectionComponent`
+- `ChatPanelComponent` — modal aside with focus-trap directive
+- Support: `ConfidenceBarComponent`, `StatusDotComponent`, `LogLineComponent`, `FileDropzoneComponent`, `SdgChipComponent`, `FocusTrapDirective`, `LiveAnnouncerService`
+
+### 5.3.3 State shape (ports the mockup's `state` block exactly)
+
+```ts
+type Screen = 'ask' | 'process' | 'answer';
+type Theme  = 'light' | 'dark';
+type StepStatus = 'done' | 'active' | 'pending';
+
+interface InvestigationState {
+  theme: Theme;                          // persisted
+  screen: Screen;
+  chatOpen: boolean;
+
+  // Ask
+  problemDraft: string;
+  askDocsOpen: boolean;
+  askSdgOpen: boolean;
+  askMethodOpen: boolean;
+  askAdvOpen: boolean;
+  askError: boolean;
+  askShake: boolean;
+  uploadedFiles: FileRef[];
+  selectedSdgs: number[];
+  method: MethodChoice;                  // 'triz+synectics' (default) | 'triz+physics' | ...
+
+  // Process
+  activeStep: 0|1|2|3|4|5;                // driven by SSE
+  focusStep:  0|1|2|3|4|5;                // driven by user click on step chip
+  compareOpen: boolean;
+  logOpen: boolean;
+  consoleLog: LogLine[];                  // append via SSE
+  whiteCandidates: Candidate[];           // TRIZ path (populated at step 5)
+  greenCandidates: Candidate[];           // Synectics path
+  guardVerdicts: GuardVerdict[];          // NEW — see §5.3.5
+
+  // Answer
+  answerSections: Record<string, boolean>;
+  winner: Candidate | null;
+  topThree: RankedAnswer[];
+  kpis: Kpi[];
+}
+```
+
+The mockup drives all of this locally with `setInterval` timers (`startDemo()`, `activeStep++` every 1.6s, `consoleVisible++` every 550ms). In Angular, those timers are replaced by an SSE subscription that dispatches `nodeStarted`, `nodeCompleted`, `logAppended`, `investigationCompleted` actions. **Store shape stays identical** — only the driver changes. This means the mockup can be plugged into the real backend by swapping one adapter file.
+
+Client-side validation from `attemptStart()` (line 1233) ports to a pure function in `libs/domain/validation/` and is also called server-side by the Gatekeeper node — one implementation, no drift.
+
+### 5.3.4 ng-diagram — where it lives
+
+The mockup does not include a graph view. Add it as a **collapsible "Full reasoning graph"** section inside the Answer screen (`answerSections.s6`), rendered via `libs/ui/components/reasoning-graph/` bound to the `/runs/:id/trail` graph payload. This preserves the mockup's uncluttered narrative for the pitch (winner + three answers up top) while still delivering the Day-3 ngDiagram material for judging credit.
+
+### 5.3.5 Two gaps in the mockup we must close
+
+The mockup pre-dates two of the plan's locked decisions and does **not** surface them. Both need small additions during the port:
+
+1. **Contradiction Guard verdicts.** The Compare panel currently shows 3 white + 3 green candidates only. Add a fourth accordion row **"Rejected by contradiction guard"** that lists any candidate the guard vetoed, with the `rejected_reason` and the parameter ID that would degrade. This is the moment the pitch stops on — do not lose it.
+2. **Second-method label mismatch.** The mockup's Method chip reads **"TRIZ + Physics"** (line 684) and the console log uses `PHYS` levels (lines 1354, 1358–1360). We locked **Synectics with Force-Fit** in §1. **Decide once, then propagate:**
+   - Option A — keep Synectics: rename chip to "TRIZ + Synectics", swap console level to `SYNECT`, replace the "Physics decomposition" subtask copy (lines 1300, 1306) with "Analogy source: biological / personal / fantastical" copy, and change the green candidates' subtitles from `principle: 'Charge separation before RO'` to `analogy: 'Force-fit from …'`.
+   - Option B — accept the mockup: switch the second method to **First Principles / Physics decomposition** (also valid per the Event Storming doc), and rename the service `synectics-candidate.service.ts` → `physics-first.service.ts` in §4a.
+
+   The mockup's copy reads more naturally to Piotrek ("physics decomposition" > "force-fit analogy from a beehive"), and Physics matches the actual candidates (Capacitive deionization, Solar-thermal HDH, Nano-bubble feed — all physics-derived). **Recommendation: Option B.** Confirm before merging the surgery PRs.
 
 ### 5.4 ng-diagram reasoning-graph view
 Reuses Day-3 material for direct credit. The trail compiler already emits a graph payload; `libs/ui/components/reasoning-graph/` binds it to ng-diagram nodes. Each node is clickable → opens a side panel with the raw prompt + raw response + validator verdict for that step. **This is what the pitch spends 90 seconds on.**
@@ -154,16 +265,27 @@ Zero deviation from AQUATRIZ_DESIGN.md. Contract:
 
 ## 7. Accessibility (Usability 10p + Design 10p share this)
 
-Piotrek is 45 and reads dense screens all day — a11y **is** the product.
+Piotrek is 45 and reads dense screens all day — a11y **is** the product. Good news: the mockup already ships most of the required semantics; the port must **preserve them exactly**, not decorate around them.
 
-- **WCAG 2.1 AA contrast:** verified pairs — `text-primary`/`primary` = 15.8:1 · `text-secondary`/`primary-light` = 5.6:1 · `accent`/`primary` = 6.2:1. Add a CI check that runs `pa11y-ci` against `apps/web` on every PR.
-- **Landmarks:** `<header>`, `<nav>`, `<main>`, `<aside>` retained from the design mockup — the a11y skeleton is already there.
-- **Keyboard:** every action reachable via `Tab`; visible focus ring 2px `interactive`, offset 2px; command palette `⌘K` (matches the mockup's Assistant toggle affordance).
-- **Live regions:** SSE pipeline events → `aria-live="polite"` on the console log; validator failures → `aria-live="assertive"`.
-- **Reduced motion:** `@media (prefers-reduced-motion: reduce)` disables pulse/glow/shimmer/scroll animations listed in the design doc.
-- **Semantics over icons:** every status dot has an `aria-label` ("connected", "generating", "failed"). KPI numbers get plain-language `aria-label` ("42 cubic metres per hour, up 12 percent").
-- **Charts:** every sparkline/matrix has a keyboard-focusable "View data" toggle that reveals a `<table>` fallback with the same numbers.
-- **Enforcement:** port the intent of `eslint-plugin-jsx-a11y` (from Day 2 repo) into `@angular-eslint/template/*` rules; wire into `nx affected --target=lint`. A11y regressions block CI.
+**Already present in `AquaTRIZ.html` — do not lose during Angular port:**
+- Semantic landmarks: `<header>`, `<main>`, `<aside role="dialog" aria-label="R&D assistant">` on chat panel, sticky `<aside>` for step navigation on Process.
+- `aria-label` on every icon-only button: Home, Toggle color theme, Dismiss, Remove file, Close, Send, Message the assistant, step chips ("Step 3 — Name the tradeoff (active)").
+- `aria-expanded` on every disclosure control: `askDocsOpen`, `askSdgOpen`, `askMethodOpen`, `askAdvOpen`, `compareOpen`, `logOpen`, `r.open` (answer sections).
+- Modal overlay pattern with focus-blocking backdrop + `role="dialog"`.
+- Focus-ring colour token (`--focus-ring`) already threaded through every interactive element's hover state.
+- Minimum 40px hit target on primary buttons, 32px on chip toggles.
+- Theme toggle (light/dark persisted) — respects users who need a light background.
+
+**Must add during port:**
+- **WCAG 2.1 AA contrast audit:** verify every `--text*` / `--card|bg*` pair in both themes. Automate with an `axe-core` snapshot per screen in `apps/web/e2e/`.
+- **Focus management:** on `screen` change, move focus to the new screen's `<h1>`. On chat open, trap focus inside the dialog (`FocusTrapDirective`); on close, restore to the assistant toggle button.
+- **Live regions:** wrap the console log in `aria-live="polite" aria-atomic="false"`. Validator failures + guard rejections → `aria-live="assertive"`. Announce step transitions ("Step 4 of 6 — Draft ideas — in progress") via a shared `LiveAnnouncerService`.
+- **Reduced motion:** the mockup has `aq-pulse-dot`, `aq-glow-ring`, `aq-bar-fill`, `aq-fade-in-up`, `aq-slide-in-right`, `aq-shimmer` animations. `@media (prefers-reduced-motion: reduce)` gates them off with `animation: none !important` and `transform: none !important` where transforms are decorative.
+- **Keyboard command palette:** the `⌘K` label on the Assistant button is not currently a real shortcut. Bind `⌘K` / `Ctrl+K` to `toggleChat` via a global keydown handler.
+- **KPI + confidence bars:** every numeric widget gets a plain-language `aria-label` derived from `k.plain` (already in the mockup data — line 1081). Confidence bars get `role="progressbar" aria-valuenow aria-valuemin=0 aria-valuemax=100`.
+- **Step chips:** already `aria-label`-ed. Also add `aria-current="step"` on the active one so screen readers announce position without hunting.
+- **Reasoning-graph fallback:** when the ng-diagram section is opened, a keyboard-focusable "View as table" toggle reveals a `<table>` listing every node with headers "Node · Kind · Input · Output · Latency · Validator verdict".
+- **Enforcement:** port the intent of `eslint-plugin-jsx-a11y` (Day 2 repo) into `@angular-eslint/template/*` rules; `pa11y-ci` on `apps/web` in CI; `axe-core` in `apps/web/e2e/` with three screen fixtures. Any regression blocks CI.
 
 ---
 
@@ -217,6 +339,8 @@ Slides in English (per the "one English-speaking judge" note in Deliverables).
 | Contradiction Guard false-positives kill all candidates | Guard emits `rejected_reason` — trail shows the rejection, and the UI surfaces "guard hit, retry with adjusted context" instead of empty state. |
 | Web-search flakiness on deep evaluator | Cache RAG responses per problem-hash; second demo run is instant. |
 | Design-token drift between doc and code | Generate CSS variables from a single source file; add a PR check that greps app code for hex literals (must be empty). |
+| **Method mismatch: `AquaTRIZ.html` says "TRIZ + Physics", §1 locked Synectics.** | Decide once (see §5.3.5) before any surgery PR — swapping later means editing 6+ mockup regions plus prompt files. Recommendation: switch second method to **Physics / First Principles** to match the mockup's polished narrative. |
+| Contradiction Guard has no UI slot in the mockup | Add a "Rejected by guard" accordion inside the Compare panel (§5.3.5) — one component, one SSE event, no layout rework. |
 | A11y regressions | `pa11y-ci` on `apps/web`; ported jsx-a11y rules on Angular templates in CI. |
 | Cloud SQL cold start | `min-instances=1`, connector pool warm. |
 | Scope creep on the second method | Locked to Synectics; no swap after HTTP layer merges even if someone floats "Morphological just to be safe". |
@@ -236,4 +360,4 @@ Slides in English (per the "one English-speaking judge" note in Deliverables).
 
 ---
 
-**Next actionable step:** approve this plan and I'll open the two surgery PRs (§4a and §4b) first, since everything downstream depends on the pipeline having the right shape.
+**Next actionable step:** resolve the second-method reconciliation in §5.3.5 (Synectics vs Physics), then I'll open the two surgery PRs (§4a and §4b) since everything downstream — including the frontend port — depends on the pipeline having the right shape and the mockup's copy being consistent with it.

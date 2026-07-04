@@ -17,7 +17,8 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "paths": {
-      "@axiomflow/triz-core": ["./libs/triz-core/src/index.ts"]
+      "@axiomflow/triz-core": ["./libs/triz-core/src/index.ts"],
+      "@axiomflow/data-access-db": ["./libs/data-access/db/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

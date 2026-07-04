@@ -1,0 +1,63 @@
+<header class="top-bar">
+  <!-- Logo -->
+  <button
+    class="logo-btn"
+    (click)="store.goAsk()"
+    aria-label="AxiomFlow R&amp;D AI research assistant — go to home"
+  >
+    <span class="logo-icon">◊</span>
+    <span class="logo-wordmark">AxiomFlow</span>
+    <span class="logo-badge">R&amp;D</span>
+    <span class="logo-sub">AI research assistant</span>
+  </button>
+
+  <!-- Breadcrumb (when not on Ask) -->
+  @if (store.showBreadcrumb()) {
+    <div class="breadcrumb">
+      <span class="breadcrumb-project">Coastal Desalination · ZLD Retrofit</span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-screen">{{ store.screenLabel() }}</span>
+    </div>
+  }
+
+  <!-- Step chips (only during Process) -->
+  @if (store.isProcess()) {
+    <div class="step-chips" role="navigation" aria-label="Investigation steps">
+      @for (s of steps; track s.n; let i = $index) {
+        <button
+          class="step-chip"
+          [class.step-chip--done]="stepStatus(i) === 'done'"
+          [class.step-chip--active]="stepStatus(i) === 'active'"
+          [class.step-chip--pending]="stepStatus(i) === 'pending'"
+          [attr.aria-label]="'Step ' + s.n + ' — ' + s.plainName + ' (' + stepStatus(i) + ')'"
+          [attr.aria-current]="stepStatus(i) === 'active' ? 'step' : null"
+          (click)="focusStep(i)"
+        >
+          @if (stepStatus(i) === 'done') { ✓ } @else { {{ s.n }} }
+        </button>
+      }
+    </div>
+  }
+
+  <div class="top-bar__spacer"></div>
+
+  <!-- Assistant toggle -->
+  <button
+    class="btn-ghost"
+    (click)="store.toggleChat()"
+    [attr.aria-expanded]="store.chatOpen()"
+    aria-controls="chat-panel"
+  >
+    ◈ Assistant
+    <kbd class="kbd">⌘K</kbd>
+  </button>
+
+  <!-- Theme toggle -->
+  <button
+    class="btn-icon"
+    (click)="store.toggleTheme()"
+    aria-label="Toggle color theme"
+  >
+    {{ store.themeIcon() }}
+  </button>
+</header>

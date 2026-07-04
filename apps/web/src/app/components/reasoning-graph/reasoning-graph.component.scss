@@ -1,0 +1,76 @@
+.graph-container {
+  display: flex;
+  height: 600px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.graph-main {
+  flex: 1;
+  position: relative;
+}
+
+.graph-side {
+  width: 350px;
+  border-left: 1px solid var(--border);
+  background: var(--bg-elevated);
+  padding: var(--space-4);
+  overflow-y: auto;
+
+  h3 {
+    margin-top: 0;
+    color: var(--text);
+  }
+
+  .meta {
+    font-size: var(--text-md);
+    color: var(--text-muted);
+    margin-bottom: var(--space-4);
+  }
+}
+
+.data-block {
+  margin-bottom: var(--space-4);
+
+  h4 {
+    font-size: var(--text-sm);
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: var(--space-2);
+  }
+
+  pre {
+    background: var(--bg);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+    font-family: 'Roboto Mono', monospace;
+    font-size: var(--text-sm);
+    white-space: pre-wrap;
+    word-break: break-all;
+    border: 1px solid var(--border);
+    max-height: 250px;
+    overflow-y: auto;
+  }
+}
+
+:host ::ng-deep {
+  .node {
+    cursor: pointer;
+    outline: none;
+
+    &:hover rect {
+      stroke: var(--accent);
+      stroke-width: 2;
+    }
+  }
+
+  .edge {
+    stroke: var(--border-strong);
+  }
+
+  .arrow-head {
+    fill: var(--border-strong);
+  }
+}

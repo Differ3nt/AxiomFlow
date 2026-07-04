@@ -1,0 +1,180 @@
+// AxiomFlow Design Tokens — ported from AquaTRIZ.html
+// Source of truth for all CSS custom properties.
+// Applied via [data-theme="light"] and [data-theme="dark"] on the root element.
+
+// ─── Theme-independent tokens ───────────────────────────────────────────────
+
+:root {
+  // Spacing scale (Tailwind-style, 4px base)
+  --space-1:    4px;
+  --space-1-5:  6px;
+  --space-2:    8px;
+  --space-2-5: 10px;
+  --space-3:   12px;
+  --space-3-5: 14px;
+  --space-4:   16px;
+  --space-4-5: 18px;
+  --space-5:   20px;
+  --space-5-5: 22px;
+  --space-6:   24px;
+  --space-7:   28px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-14:  56px;
+  --space-16:  64px;
+  --space-20:  80px;
+
+  // Border radius
+  --radius-xs:   3px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:  10px;
+  --radius-2xl: 12px;
+  --radius-full: 9999px;
+
+  // Typography — font sizes
+  --text-2xs:  10px;
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   15px;
+  --text-xl:   16px;
+  --text-2xl:  22px;
+  --text-3xl:  28px;
+  --text-4xl:  40px;
+
+  // Typography — font weights
+  --font-normal:    400;
+  --font-medium:    500;
+  --font-semibold:  600;
+  --font-bold:      700;
+  --font-extrabold: 800;
+
+  // Typography — line heights
+  --leading-tight:   1.1;
+  --leading-snug:    1.45;
+  --leading-normal:  1.55;
+  --leading-relaxed: 1.6;
+  --leading-loose:   1.75;
+
+  // Transitions
+  --transition-fast:   0.1s ease;
+  --transition-base:   0.15s ease;
+  --transition-slow:   0.2s ease;
+  --transition-medium: 0.3s ease;
+  --transition-long:   0.6s ease;
+
+  // Z-index scale
+  --z-sticky:  10;
+  --z-topbar:  20;
+  --z-overlay: 30;
+  --z-panel:   31;
+
+  // Component sizes
+  --size-btn-sm:     32px;
+  --size-btn-md:     40px;
+  --size-btn-lg:     44px;
+  --size-icon-xs:    24px;
+  --size-icon-sm:    26px;
+  --size-icon-md:    34px;
+  --size-icon-lg:    40px;
+  --size-icon-xl:    44px;
+  --size-icon-2xl:   56px;
+  --size-topbar:     60px;
+  --size-chat-panel: 420px;
+}
+
+// ─── Theme tokens ────────────────────────────────────────────────────────────
+
+[data-theme="light"] {
+  --bg: #F8FAFC;
+  --bg-elevated: #F1F5F9;
+  --card: #FFFFFF;
+  --card-hover: #F8FAFC;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --text: #0F172A;
+  --text-muted: #475569;
+  --text-dim: #64748B;
+  --text-faint: #6B7A8D;
+
+  --accent: #0E8A63;
+  --accent-hover: #047853;
+  --accent-strong: #047857;
+  --accent-text: #FFFFFF;
+  --accent-soft-bg: #ECFDF5;
+  --accent-soft-border: #A7F3D0;
+
+  --info: #0369A1;
+  --info-strong: #075985;
+  --info-soft-bg: #F0F9FF;
+  --info-soft-border: #BAE6FD;
+
+  --warning: #B45309;
+  --warning-strong: #92400E;
+  --warning-soft-bg: #FFFBEB;
+  --warning-soft-border: #FDE68A;
+
+  --error: #DC2626;
+  --error-strong: #B91C1C;
+  --error-soft-bg: #FEF2F2;
+  --error-soft-border: #FECACA;
+
+  --violet: #7C3AED;
+  --violet-strong: #6D28D9;
+  --violet-soft-bg: #F5F3FF;
+  --violet-soft-border: #DDD6FE;
+
+  --overlay: rgba(15, 23, 42, 0.4);
+  --focus-ring: #4F46E5;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] {
+  --bg: #0F172A;
+  --bg-elevated: #0B1220;
+  --card: #1E293B;
+  --card-hover: #263449;
+  --border: #334155;
+  --border-strong: #475569;
+  --text: #F8FAFC;
+  --text-muted: #CBD5E1;
+  --text-dim: #94A3B8;
+  --text-faint: #8B9BB0;
+
+  --accent: #10B981;
+  --accent-hover: #34D399;
+  --accent-strong: #34D399;
+  --accent-text: #0F172A;
+  --accent-soft-bg: rgba(16, 185, 129, 0.1);
+  --accent-soft-border: rgba(16, 185, 129, 0.35);
+
+  --info: #38BDF8;
+  --info-strong: #7DD3FC;
+  --info-soft-bg: rgba(56, 189, 248, 0.1);
+  --info-soft-border: rgba(56, 189, 248, 0.35);
+
+  --warning: #F59E0B;
+  --warning-strong: #FCD34D;
+  --warning-soft-bg: rgba(245, 158, 11, 0.12);
+  --warning-soft-border: rgba(245, 158, 11, 0.35);
+
+  --error: #F87171;
+  --error-strong: #FCA5A5;
+  --error-soft-bg: rgba(239, 68, 68, 0.1);
+  --error-soft-border: rgba(239, 68, 68, 0.35);
+
+  --violet: #A78BFA;
+  --violet-strong: #C4B5FD;
+  --violet-soft-bg: rgba(167, 139, 250, 0.12);
+  --violet-soft-border: rgba(167, 139, 250, 0.35);
+
+  --overlay: rgba(0, 0, 0, 0.5);
+  --focus-ring: #818CF8;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+}

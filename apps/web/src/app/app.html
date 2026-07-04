@@ -1,0 +1,19 @@
+<div class="shell">
+  <app-top-bar />
+
+  <main class="shell__main" role="main">
+    @if (store.isAsk()) {
+      <app-ask-screen />
+    }
+    @if (store.isProcess()) {
+      <app-process-screen />
+    }
+    @if (store.isAnswer()) {
+      <app-answer-screen />
+    }
+  </main>
+
+  @if (store.chatOpen()) {
+    <app-chat-panel />
+  }
+</div>

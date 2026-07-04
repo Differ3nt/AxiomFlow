@@ -51,3 +51,5 @@ Thumbs.db
 .claude/settings.local.json
 
 .nx/polygraph
+.angular
+.a11y-report/

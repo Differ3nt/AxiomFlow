@@ -2,7 +2,10 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "analytics": false,
   "namedInputs": {
-    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "default": [
+      "{projectRoot}/**/*",
+      "sharedGlobals"
+    ],
     "production": [
       "default",
       "!{projectRoot}/.eslintrc.json",
@@ -18,14 +21,30 @@
   "targetDefaults": {
     "@nx/esbuild:esbuild": {
       "cache": true,
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "inputs": [
         "production",
         "^production",
         {
           "json": "{workspaceRoot}/tsconfig.json",
-          "fields": ["extends", "files", "include"]
+          "fields": [
+            "extends",
+            "files",
+            "include"
+          ]
         }
+      ]
+    },
+    "@angular/build:application": {
+      "cache": true,
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "production",
+        "^production"
       ]
     }
   },
@@ -42,5 +61,13 @@
         "targetName": "test"
       }
     }
-  ]
+  ],
+  "generators": {
+    "@nx/angular:application": {
+      "e2eTestRunner": "none",
+      "linter": "eslint",
+      "style": "scss",
+      "unitTestRunner": "none"
+    }
+  }
 }

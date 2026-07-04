@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { SchemaType } from '@google/generative-ai';
-import { GeminiService } from '../llm/gemini.service';
+import { ClaudeService } from '../llm/claude.service';
 import { TrizPrinciple } from '../triz/triz-data.service';
 import { Candidate, TechnicalContradiction } from './dto/reasoning.types';
 
@@ -20,13 +19,13 @@ interface RawTrizCandidate {
  */
 @Injectable()
 export class TrizCandidateService {
-  constructor(private readonly gemini: GeminiService) {}
+  constructor(private readonly claude: ClaudeService) {}
 
-  async generate(contradiction: TechnicalContradiction, principles: TrizPrinciple[]): Promise<Candidate[]> {
+  async generate(contradiction: TechnicalContradiction, principles: TrizPrinciple[], temperature: number = 0.6): Promise<Candidate[]> {
     const chosen = principles.slice(0, 3);
     const principleIds = chosen.map((p) => p.id);
 
-    const raw = await this.gemini.generateJson<{ candidates: RawTrizCandidate[] }>({
+    const raw = await this.claude.generateJson<{ candidates: RawTrizCandidate[] }>({
       systemInstruction:
         'You are a TRIZ engineering consultant. For each given inventive principle, propose ONE ' +
         'concrete, physically plausible way to apply it to the specific technical system and ' +
@@ -39,16 +38,16 @@ export class TrizCandidateService {
         `Apply exactly these TRIZ principles, one candidate each:\n` +
         chosen.map((p) => `- (${p.id}) ${p.name}: ${p.description}`).join('\n'),
       schema: {
-        type: SchemaType.OBJECT,
+        type: 'object',
         properties: {
           candidates: {
-            type: SchemaType.ARRAY,
+            type: 'array',
             items: {
-              type: SchemaType.OBJECT,
+              type: 'object',
               properties: {
-                principleId: { type: SchemaType.STRING, enum: principleIds.map(String) },
-                title: { type: SchemaType.STRING },
-                description: { type: SchemaType.STRING, description: 'Concrete application of the principle to this problem, 2-4 sentences.' },
+                principleId: { type: 'string', enum: principleIds.map(String) },
+                title: { type: 'string' },
+                description: { type: 'string', description: 'Concrete application of the principle to this problem, 2-4 sentences.' },
               },
               required: ['principleId', 'title', 'description'],
             },
@@ -56,7 +55,7 @@ export class TrizCandidateService {
         },
         required: ['candidates'],
       },
-      temperature: 0.6,
+      temperature,
     });
 
     return raw.candidates.map((c, index) => {

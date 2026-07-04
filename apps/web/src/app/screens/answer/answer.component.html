@@ -1,0 +1,198 @@
+<div class="answer" aria-label="Investigation results">
+
+  <!-- Winner banner -->
+  <div class="winner-banner" role="region" aria-label="Winning solution">
+    @if (topCandidates().length > 0) {
+      <div class="winner-banner__inner" style="align-items: center">
+        <div class="winner-badge" aria-hidden="true">✓</div>
+        <div class="winner-info" style="flex: 1;">
+          <div class="winner-label font-mono">Top-ranked solution</div>
+          <h1 class="winner-name">{{ topCandidates()[0].name }}</h1>
+          <div class="winner-meta">
+            <span class="winner-chip winner-chip--conf font-mono">{{ topCandidates()[0].confidence }}% confidence</span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Action strip -->
+  <div class="action-strip" role="toolbar" aria-label="Answer actions">
+    <button
+      class="btn-approve"
+      [class.btn-approve--done]="store.approved()"
+      aria-label="Approve and sign this solution"
+      (click)="approve()"
+    >
+      {{ store.approved() ? '✓ Approved' : '✓ Approve & sign' }}
+    </button>
+    <button class="btn-ghost" aria-label="Download report" (click)="downloadPdf()">
+      ↓ Download report
+    </button>
+  </div>
+
+  <!-- Top 3 grid -->
+  <section class="top-grid" aria-label="Top 3 ranked solutions">
+    @for (c of topCandidates(); track c.rank) {
+      <article
+        class="top-card"
+        [class.top-card--winner]="c.isWinner"
+        [attr.aria-label]="'Rank ' + c.rank + ': ' + c.name"
+      >
+        <div class="top-card__header">
+          <span
+            class="rank-badge"
+            [class]="'rank-badge ' + rankBadgeClass(c.rank)"
+            aria-hidden="true"
+          >#{{ c.rank }}</span>
+          <span class="top-card__method font-mono">{{ c.method }}</span>
+          @if (c.isWinner) {
+            <span class="winner-star" aria-label="Winner">★</span>
+          }
+        </div>
+        <h2 class="top-card__name">{{ c.name }}</h2>
+        <p class="top-card__summary">{{ c.summary }}</p>
+        <div class="top-card__bar-row">
+          <div class="top-card__bar-track">
+            <div
+              class="top-card__bar-fill"
+              [style.width]="c.confidence + '%'"
+              [style.background]="confidenceColor(c.confidence)"
+            ></div>
+          </div>
+          <span class="top-card__conf font-mono">{{ c.confidence }}%</span>
+        </div>
+        <div class="top-card__footer">
+          <button class="btn-ghost" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" (click)="iterate(c.summary)">Iterate ↺</button>
+        </div>
+      </article>
+    }
+  </section>
+
+  <!-- Candidate Comparison Graph -->
+  <section class="kpi-section" aria-label="Candidate comparison">
+    <h2 class="section-heading">Candidate Comparison</h2>
+    <div class="radar-chart-wrap">
+      <div echarts [options]="chartOptions()" class="radar-chart"></div>
+    </div>
+  </section>
+
+  <!-- Collapsible detail sections -->
+  <section class="sections" aria-label="Detailed analysis">
+    @for (sec of sections(); track sec.key) {
+      <div class="detail-section">
+        <button
+          class="detail-toggle"
+          [attr.aria-expanded]="isOpen(sec.key)"
+          [attr.aria-controls]="'sec-' + sec.key"
+          (click)="toggleSection(sec.key)"
+        >
+          <span class="detail-toggle__icon" aria-hidden="true">{{ sec.icon }}</span>
+          <span class="detail-toggle__title">{{ sec.title }}</span>
+          <span
+            class="detail-toggle__chevron"
+            [class.detail-toggle__chevron--open]="isOpen(sec.key)"
+            aria-hidden="true"
+          >▸</span>
+        </button>
+
+        @if (isOpen(sec.key)) {
+          <div
+            class="detail-body"
+            [id]="'sec-' + sec.key"
+            role="region"
+          >
+            @if (sec.key === 's1') {
+              <!-- Why this solution won — structured prose -->
+              <div class="why-won">
+                @if (sec.description) {
+                  <p class="why-won__lead">{{ sec.description }}</p>
+                }
+                <div class="why-won__paras">
+                  @for (para of splitIntoParagraphs(sec.body); track $index) {
+                    <p class="why-won__para">{{ para }}</p>
+                  }
+                </div>
+                @if (sec.basis) {
+                  <div class="why-won__basis">
+                    <span class="why-won__basis-label">Inventive principle</span>
+                    <span class="why-won__basis-text">{{ sec.basis }}</span>
+                  </div>
+                }
+              </div>
+            } @else if (sec.key === 's3') {
+              <!-- All candidates table -->
+              <div class="candidates-table-wrap">
+                <table class="candidates-table" aria-label="All 6 candidates">
+                  <thead>
+                    <tr>
+                      <th scope="col">Rank</th>
+                      <th scope="col">Solution</th>
+                      <th scope="col">Method</th>
+                      <th scope="col">Confidence</th>
+                      <th scope="col">Basis</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of allCandidates(); track c.rank) {
+                      <tr [class.table-row--winner]="c.isWinner" [class.table-row--rejected]="c.rejected">
+                        <td class="font-mono">
+                          @if (c.rejected) { <span class="rejection-mark" aria-label="Rejected">✕</span> }
+                          @else { #{{ c.rank }} }
+                        </td>
+                        <td class="candidate-name-cell">{{ c.name }}</td>
+                        <td class="font-mono method-cell">{{ c.method }}</td>
+                        <td>
+                          <div class="table-bar-row">
+                            <div class="table-bar-track">
+                              <div
+                                class="table-bar-fill"
+                                [style.width]="c.confidence + '%'"
+                                [style.background]="confidenceColor(c.confidence)"
+                              ></div>
+                            </div>
+                            <span class="font-mono">{{ c.confidence > 0 ? c.confidence + '%' : '—' }}</span>
+                          </div>
+                        </td>
+                        <td class="font-mono principle-cell">{{ c.trizPrinciple }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="detail-prose">{{ sec.body }}</div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- Section 6: Full reasoning graph -->
+  <section class="answer-section">
+    <div class="answer-section__header" (click)="store.toggleAnswerSection('s6')" [attr.aria-expanded]="store.answerSections()['s6']" tabindex="0" (keydown.enter)="store.toggleAnswerSection('s6')" role="button">
+      <div class="answer-section__title">
+        <span class="icon" aria-hidden="true">🕸</span>
+        Full reasoning graph
+      </div>
+      <div class="chevron" [class.open]="store.answerSections()['s6']">▼</div>
+    </div>
+    
+    @if (store.answerSections()['s6']) {
+      <div class="answer-section__body" id="sec-s6" role="region">
+        <aqt-reasoning-graph></aqt-reasoning-graph>
+      </div>
+    }
+  </section>
+
+  <!-- Not satisfied CTA -->
+  <div class="restart-cta" role="complementary" aria-label="Start a new investigation">
+    <div class="restart-cta__text">
+      <div class="restart-cta__heading">Not satisfied with these results?</div>
+      <div class="restart-cta__sub">Refine the problem statement or try a different SDG alignment.</div>
+    </div>
+    <button class="btn-restart" (click)="store.goAsk()">← Reframe the problem</button>
+  </div>
+
+</div>

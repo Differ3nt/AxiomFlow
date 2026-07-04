@@ -16,7 +16,7 @@ export interface TechnicalContradiction {
   statement: string;
 }
 
-export type CandidateMethod = 'triz' | 'biomimicry';
+export type CandidateMethod = 'triz' | 'physics';
 
 export interface Candidate {
   id: string;
